@@ -25,8 +25,8 @@ export interface PostgresErrorOptions {
   routine?: string | undefined;
 }
 
-// oxlint-disable-next-line typescript-eslint(no-unsafe-declaration-merging)
-interface PostgresError {
+class PostgresError extends SQLError implements Bun.SQL.PostgresError {
+  public readonly code: string;
   detail?: string | undefined;
   hint?: string | undefined;
   severity?: string | undefined;
@@ -43,10 +43,6 @@ interface PostgresError {
   file?: string | undefined;
   line?: string | undefined;
   routine?: string | undefined;
-}
-
-class PostgresError extends SQLError implements Bun.SQL.PostgresError {
-  public readonly code: string;
 
   constructor(message: string, options: PostgresErrorOptions) {
     super(message);
@@ -79,14 +75,10 @@ export interface SQLiteErrorOptions {
   byteOffset?: number | undefined;
 }
 
-// oxlint-disable-next-line typescript-eslint(no-unsafe-declaration-merging)
-interface SQLiteError {
-  byteOffset?: number | undefined;
-}
-
 class SQLiteError extends SQLError implements Bun.SQL.SQLiteError {
   public readonly code: string;
   public readonly errno: number;
+  byteOffset?: number | undefined;
 
   constructor(message: string, options: SQLiteErrorOptions) {
     super(message);
@@ -106,14 +98,10 @@ export interface MySQLErrorOptions {
   sqlState?: string | undefined;
 }
 
-// oxlint-disable-next-line typescript-eslint(no-unsafe-declaration-merging)
-interface MySQLError {
-  errno?: number | undefined;
-  sqlState?: string | undefined;
-}
-
 class MySQLError extends SQLError implements Bun.SQL.MySQLError {
   public readonly code: string;
+  errno?: number | undefined;
+  sqlState?: string | undefined;
 
   constructor(message: string, options: MySQLErrorOptions) {
     super(message);
