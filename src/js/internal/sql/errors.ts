@@ -27,22 +27,25 @@ export interface PostgresErrorOptions {
 
 class PostgresError extends SQLError implements Bun.SQL.PostgresError {
   public readonly code: string;
-  detail?: string | undefined;
-  hint?: string | undefined;
-  severity?: string | undefined;
-  errno?: string | undefined;
-  position?: string | undefined;
-  internalPosition?: string | undefined;
-  internalQuery?: string | undefined;
-  where?: string | undefined;
-  schema?: string | undefined;
-  table?: string | undefined;
-  column?: string | undefined;
-  dataType?: string | undefined;
-  constraint?: string | undefined;
-  file?: string | undefined;
-  line?: string | undefined;
-  routine?: string | undefined;
+  // `declare` prevents class-field emission so these optional properties
+  // are only added to the instance when the constructor actually assigns
+  // them — preserving `in`/`hasOwnProperty`/`Object.keys` semantics.
+  declare detail?: string | undefined;
+  declare hint?: string | undefined;
+  declare severity?: string | undefined;
+  declare errno?: string | undefined;
+  declare position?: string | undefined;
+  declare internalPosition?: string | undefined;
+  declare internalQuery?: string | undefined;
+  declare where?: string | undefined;
+  declare schema?: string | undefined;
+  declare table?: string | undefined;
+  declare column?: string | undefined;
+  declare dataType?: string | undefined;
+  declare constraint?: string | undefined;
+  declare file?: string | undefined;
+  declare line?: string | undefined;
+  declare routine?: string | undefined;
 
   constructor(message: string, options: PostgresErrorOptions) {
     super(message);
@@ -78,7 +81,7 @@ export interface SQLiteErrorOptions {
 class SQLiteError extends SQLError implements Bun.SQL.SQLiteError {
   public readonly code: string;
   public readonly errno: number;
-  byteOffset?: number | undefined;
+  declare byteOffset?: number | undefined;
 
   constructor(message: string, options: SQLiteErrorOptions) {
     super(message);
@@ -100,8 +103,8 @@ export interface MySQLErrorOptions {
 
 class MySQLError extends SQLError implements Bun.SQL.MySQLError {
   public readonly code: string;
-  errno?: number | undefined;
-  sqlState?: string | undefined;
+  declare errno?: number | undefined;
+  declare sqlState?: string | undefined;
 
   constructor(message: string, options: MySQLErrorOptions) {
     super(message);
