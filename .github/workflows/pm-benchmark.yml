@@ -1,0 +1,112 @@
+name: pm-benchmark
+
+# Compare bun, utoo, pnpm, yarn, npm install times against the
+# bench/install/ fixture. Opt-in only:
+#   pull_request labeled `pm-benchmark`  → auto-run + sticky PR comment
+#   workflow_dispatch                    → ad-hoc, with overridable inputs
+# Never auto-runs on push or unlabeled PRs.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+    inputs:
+      pm_list:
+        description: 'Comma-separated PMs (default: bun,utoo,pnpm,yarn,npm)'
+        required: false
+        default: 'bun,utoo,pnpm,yarn,npm'
+        type: string
+      registry:
+        description: 'Registry URL'
+        required: false
+        default: 'https://registry.npmjs.org'
+        type: string
+      cold_runs:
+        description: 'Cold runs per PM'
+        required: false
+        default: '1'
+        type: string
+      warm_runs:
+        description: 'Warm runs per PM'
+        required: false
+        default: '3'
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pm-benchmark-linux:
+    if: >
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'pm-benchmark')) ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Install yarn + utoo
+        run: |
+          npm install -g yarn utoo
+          yarn --version
+          utoo --version
+
+      - uses: ./.github/actions/install-bench-tools
+        with:
+          platform: linux
+
+      - name: Verify tools
+        run: |
+          hyperfine --version
+          bun --version
+          utoo --version
+          pnpm --version
+          yarn --version
+          npm --version
+
+      - name: Run pm-bench.sh
+        env:
+          PM_LIST: ${{ github.event.inputs.pm_list || 'bun,utoo,pnpm,yarn,npm' }}
+          REGISTRY: ${{ github.event.inputs.registry || 'https://registry.npmjs.org' }}
+          BENCH_COLD_RUNS: ${{ github.event.inputs.cold_runs || '1' }}
+          BENCH_WARM_RUNS: ${{ github.event.inputs.warm_runs || '3' }}
+        run: |
+          chmod +x bench/pm-bench.sh
+          mkdir -p /tmp/pm-bench-output
+          bash bench/pm-bench.sh 2>&1 | tee /tmp/pm-bench-output/run.log
+
+      - name: Upload bench artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pm-bench-output-linux
+          path: /tmp/pm-bench-output
+          retention-days: 14
+
+      - if: always()
+        uses: ./.github/actions/post-bench-comment
+        with:
+          platform: linux
+          os: ubuntu-latest
+          github-token: ${{ secrets.GITHUB_TOKEN }}
